@@ -30,7 +30,7 @@ router.get(
     }
     let whereClause = conditions.length > 0 ? `WHERE `:'';
     let i =1;
-    while(true){
+    while(i<=conditions.length){
       whereClause += conditions[i-1]+' ';
       if (i === conditions.length) break;
       whereClause += 'AND ';
@@ -65,7 +65,7 @@ router.post(
         [name, email, phone, passwordHash]
       );
       await clientConnection.query(
-        `INSERT INTO auth_token (customer_id, token_hash, purpose, expires_at)
+        `INSERT INTO auth_token (app_user, token_hash, purpose, expires_at)
          VALUES ($1, $2, 'invite', now() + INTERVAL '1 day')`,
         [created.id, inviteTokenHash]
       );

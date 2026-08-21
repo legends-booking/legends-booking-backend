@@ -32,7 +32,7 @@ router.post(
   })
 );
 
-// ---------- Customer login with invite token ----------
+// ---------- Customer set password with invite token ----------
 router.post(
   '/set-password',
   asyncHandler(async (req, res) =>{
@@ -80,7 +80,7 @@ router.post(
     }
 
     const { rows } = await query(
-      'SELECT id, name, email, phone, password_hash FROM customers WHERE email = $1',
+      'SELECT id, name, email, phone, password_hash FROM app_user WHERE email = $1',
       [email]
     );
     /** @type {import('../model/db').AppUser} */
@@ -92,32 +92,6 @@ router.post(
     delete appUser.password_hash;
     const token = signToken({ id: appUser.id, role: appUser.role });
     res.json({ user: appUser, token });
-  })
-);
-
-// ---------- Admin login ----------
-// Admins are seeded/created directly in the DB (or via a protected admin-only endpoint later),
-// not via public self-signup.
-router.post(
-  '/admin/login',
-  asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'email and password are required' });
-    }
-
-    const { rows } = await query(
-      'SELECT id, name, email, password_hash FROM admins WHERE email = $1',
-      [email]
-    );
-    const admin = rows[0];
-    if (!admin || !(await bcrypt.compare(password, admin.password_hash))) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
-
-    delete admin.password_hash;
-    const token = signToken({ id: admin.id, role: 'admin' });
-    res.json({ admin, token });
   })
 );
 

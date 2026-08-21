@@ -23,16 +23,6 @@ The `.env.example` values match this service. If the database is missing later, 
 cp .env.example .env
 ```
 
-Set a real `JWT_SECRET`. The Postgres settings can stay as-is for `docker compose`.
-
-| Variable | Purpose |
-|---|---|
-| `PORT` | API port (default `4000`) |
-| `JWT_SECRET` | Signing key for auth tokens |
-| `JWT_EXPIRES_IN` | Token lifetime (default `7d`) |
-| `PGHOST` / `PGPORT` / `PGDATABASE` / `PGUSER` / `PGPASSWORD` | Postgres connection |
-| `PGADMIN_DATABASE` | Optional; DB used to auto-create `PGDATABASE` (default `postgres`) |
-
 ## 3. Install dependencies
 
 ```bash
@@ -54,9 +44,9 @@ To add a new migration later, drop a new numbered file (e.g. `002_add_something.
 into `src/db/migrations/` and run `npm run migrate` again.
 
 ## 5. Create your first admin
-
+Edit the .env file - update ADMIN values.
 ```bash
-ADMIN_EMAIL=you@yourgym.com ADMIN_PASSWORD=pick-something-strong npm run seed
+npm run seed
 ```
 
 ## 6. Start the server
@@ -77,43 +67,16 @@ curl http://localhost:4000/health
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| POST | `/auth/signup` | — | Customer self sign-up |
-| POST | `/auth/login` | — | Customer login |
-| POST | `/auth/admin/login` | — | Admin login |
-| GET | `/classes` | — | List upcoming classes |
-| GET | `/classes/:id` | — | Class detail |
-| POST | `/classes` | admin | Create a class |
-| PATCH | `/classes/:id` | admin | Edit a class |
-| DELETE | `/classes/:id` | admin | Remove a class |
-| GET | `/enrollments/me` | customer | My active enrollments |
-| POST | `/enrollments/:classId` | customer | Enroll in a class |
-| DELETE | `/enrollments/:classId` | customer | Unsubscribe from a class |
-| GET | `/memberships/plans` | — | List membership plans |
-| POST | `/memberships/plans` | admin | Create a plan |
-| PATCH | `/memberships/plans/:id` | admin | Edit a plan |
-| POST | `/memberships/customers/:id/assign` | admin | Assign a plan to a member |
-| GET | `/admin/members` | admin | List all members |
-| POST | `/admin/members` | admin | Add a member directly |
+| GET | `/health` | — | Liveness check (`{ "status": "ok" }`) |
+| POST | `/auth/signup` | — | Customer self sign-up (`name`, `email`, `password`; optional `phone`, `role`). Returns `{ user, token }` |
+| POST | `/auth/login` | — | Login with `email` and `password`. Returns `{ user, token }` |
+| POST | `/auth/set-password` | — | Set password using an invite `token` and new `password` |
+| GET | `/members` | admin | List members. Optional query: `userRole` (`admin` / `instructor` / `customer`) |
+| POST | `/members` | admin | Front-desk add member (`name`, `email`, `phone`). Returns `{ user, token }` where `token` is a one-day invite |
 
-All authenticated routes expect `Authorization: Bearer <token>`, where the token comes
-back from a login/signup call.
+All authenticated routes expect `Authorization: Bearer <token>`. Login and signup return a JWT
+(expires in `JWT_EXPIRES_IN`, default 7 days). `/members` requires an admin JWT.
 
-## Notes on design choices
+Invite flow: `POST /members` creates the user with a random unusable password and an invite
+token (valid 1 day). The member then calls `POST /auth/set-password` with that token.
 
-- **UUID primary keys** (`gen_random_uuid()`) rather than serial ints — easier to merge
-  data later and safer to expose in URLs.
-- **`citext` for emails** so lookups/uniqueness are case-insensitive automatically.
-- **Enrollment capacity check uses `SELECT ... FOR UPDATE`** inside a transaction, so two
-  people tapping "enroll" on the last spot at the same instant can't both get in.
-- **Cancel-then-re-enroll** is handled with `ON CONFLICT ... DO UPDATE` on the
-  `(class_id, customer_id)` unique constraint, rather than allowing duplicate rows.
-- **Push notifications aren't wired up yet** — `push_tokens` and `notification_log`
-  tables exist so the schema is ready, but the Expo push integration is a separate
-  next step once the mobile app registers tokens.
-
-## What's next
-
-- Add a route for customers to register/update their Expo push token.
-- Add an Expo push sender (triggered e.g. when a class is about to start, or cancelled).
-- Add refresh tokens / token revocation if you want logout-everywhere support.
-- Add pagination to `/classes` and `/admin/members` once data volume grows.
