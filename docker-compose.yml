@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: legends-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: legends_booking
+    ports:
+      - "5432:5432"
+    volumes:
+      - legends_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d legends_booking"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  legends_pgdata:
