@@ -5,6 +5,7 @@ const cors = require('cors');
 const { errorHandler } = require('./src/middleware/errorHandler');
 const authRoutes = require('./src/routes/auth.routes');
 const membersRoutes = require('./src/routes/members.routes');
+const membershipPlansRoutes = require('./src/routes/membershipPlans.routes');
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/auth', authRoutes);
 app.use('/members', membersRoutes);
+app.use('/membership-plans', membershipPlansRoutes);
 
 
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

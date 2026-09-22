@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS membership_plan (
     description     TEXT,
     image           TEXT,
     price           NUMERIC(10,2) NOT NULL CHECK (price >= 0),
-    duration_days   INTEGER NOT NULL CHECK (duration_days > 0),
+    duration_days   INTEGER NOT NULL CHECK (duration_days > 0) default 30,
     class_credits   INTEGER, -- NULL = unlimited classes during the period
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
