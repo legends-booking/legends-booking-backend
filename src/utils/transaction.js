@@ -12,9 +12,10 @@ async function transaction(fn) {
         const result= await fn(client);
         await client.query('COMMIT');
         return result;
-    }catch(error){
+    }catch(err){
+        console.log('Transaction rolled back', err.message)
         await client.query('ROLLBACK');
-        throw error;
+        throw err;
     }finally{
         client.release();
     }

@@ -9,6 +9,9 @@ const pool = new Pool({
   database: process.env.PGDATABASE,
   user: process.env.PGUSER,
   password: process.env.PGPASSWORD,
+  ssl: process.env.PGSSL == 'false'?false:{rejectUnauthorized: true},
+  connectionTimeoutMillis: 10_000,
+  idleTimeoutMillis:10_000
 });
 
 pool.on('error', (err) => {
