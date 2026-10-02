@@ -19,14 +19,29 @@ const upload = multer({
     }
 });
 
+function uploadImage(req,res,next)  {
+    upload.single('image')(req,res, (err) => {
+        if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+            console.log('File size exceeds the limit of 5MB');
+            return res.status(400).json({error: 'File size exceeds the limit of 5MB'});
+        }
+        if (err) return  next(err);
+        next();
+    })
+
+}
+
 router.get('/', asyncHandler(async (req, res) => {
         const { rows } = await query('SELECT * FROM membership_plan',[]);
         res.json(rows);
     }),
 );
 
-router.post('/', upload.single('image'), asyncHandler(async(req, res) =>{
-    const {name, description, image, price, credits} = req.body;
+router.post('/', uploadImage, asyncHandler(async(req, res) =>{
+    const {name, description, price, credits} = req.body;
+    const priceFloat = parseFloat(price);
+    const creditsInt = parseInt(credits);
+    console.log(creditsInt);
     if(!name || !price){
         return res.status(400).json({error: 'Missing Required Fields'});
     }
@@ -40,7 +55,7 @@ router.post('/', upload.single('image'), asyncHandler(async(req, res) =>{
     }
     const { rows: [plan] } = await query('INSERT INTO membership_plan (name, description, image, price, class_credits) '+
         'VALUES ($1, $2, $3, $4, $5) RETURNING *', 
-        [name, description, imageUrl, price, credits]);
+        [name, description, imageUrl, priceFloat, creditsInt]);
     res.status(201).json(plan);
     }),
 );
