@@ -41,7 +41,6 @@ router.post('/', uploadImage, asyncHandler(async(req, res) =>{
     const {name, description, price, credits} = req.body;
     const priceFloat = parseFloat(price);
     const creditsInt = parseInt(credits);
-    console.log(creditsInt);
     if(!name || !price){
         return res.status(400).json({error: 'Missing Required Fields'});
     }

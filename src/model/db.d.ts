@@ -3,7 +3,7 @@ export interface AppUser {
     name: string;
     email: string;
     password_hash: string;
-    phone: string;
+    mobile: string;
     role: 'admin'|'instructor'|'customer';
     created_at: Date;
 }
