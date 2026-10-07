@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS app_user (
     name            TEXT NOT NULL,
     email           CITEXT NOT NULL UNIQUE,
     password_hash   TEXT NOT NULL,
-    phone           TEXT NOT NULL,
+    mobile           TEXT NOT NULL,
     role            TEXT NOT NULL default 'customer' CHECK(role IN ('admin','instructor','customer')),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
