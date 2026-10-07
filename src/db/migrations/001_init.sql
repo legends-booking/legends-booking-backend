@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS customer_membership (
     start_date          DATE NOT NULL,
     end_date            DATE NOT NULL,
     status              TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled')),
-    credits_remaining   INTEGER NOT NULL,
+    credits_remaining   INTEGER ,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (app_user, plan_id, start_date, end_date)
 );

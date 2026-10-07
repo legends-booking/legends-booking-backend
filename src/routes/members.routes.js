@@ -58,9 +58,9 @@ router.post(
     const inviteTokenHash = crypto.createHash('sha256').update(inviteToken).digest('hex');
     const user_created = await transaction(async (clientConnection) => {
       const { rows: [created] } = await clientConnection.query(
-        `INSERT INTO app_user (name, email, phone, role, password_hash)
+        `INSERT INTO app_user (name, email, mobile, role, password_hash)
          VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, name, email, phone as mobile, created_at`,
+         RETURNING id, name, email, mobile, created_at`,
         [name, email, mobile, role, passwordHash]
       );
       const {rows:[credits]} = await clientConnection.query(
