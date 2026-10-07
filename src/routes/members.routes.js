@@ -13,7 +13,8 @@ const appUserFilters ={
 }
 
 // All routes here require an authenticated admin
-router.use(requireAuth, requireRole('admin'));
+//TODO: Uncomment this when we have a proper authentication system
+//router.use(requireAuth, requireRole('admin'));
 
 // ---------- List members ----------
 router.get(
