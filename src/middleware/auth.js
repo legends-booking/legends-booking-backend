@@ -1,4 +1,4 @@
-const { verifyToken } = require('../utils/jwt');
+const { verifyToken } = require('../utils/auth');
 
 /**
  * Verifies the Bearer token and attaches { id, role } to req.user.

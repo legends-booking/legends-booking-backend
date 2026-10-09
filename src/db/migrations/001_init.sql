@@ -138,14 +138,14 @@ CREATE TABLE IF NOT EXISTS push_notification(
 -- ------------ Refresh Tokens for Auth ----------
 
 CREATE TABLE IF NOT EXISTS refresh_token (
-    id UUID NOT NULL PRIMARY KEY,
+    id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
     app_user BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
     refresh_token_hash TEXT NOT NULL UNIQUE,
     family_id UUID NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
     revoked BOOLEAN NOT NULL DEFAULT FALSE,
     user_agent TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     
 );
 
