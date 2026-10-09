@@ -134,3 +134,20 @@ CREATE TABLE IF NOT EXISTS push_notification(
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (app_user, endpoint)
 );
+
+-- ------------ Refresh Tokens for Auth ----------
+
+CREATE TABLE IF NOT EXISTS refresh_token (
+    id UUID NOT NULL PRIMARY KEY,
+    app_user BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+    refresh_token_hash TEXT NOT NULL UNIQUE,
+    family_id UUID NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    revoked BOOLEAN NOT NULL DEFAULT FALSE,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    
+);
+
+CREATE INDEX IF NOT EXISTS idx_refresh_token_app_user ON refresh_token(app_user);
+CREATE INDEX IF NOT EXISTS idx_refresh_token_family_id ON refresh_token(family_id);
