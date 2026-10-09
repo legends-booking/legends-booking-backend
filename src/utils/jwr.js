@@ -17,7 +17,7 @@ const hash = (s) => {return crypto.createHash('sha256').update(s).digest('hex')}
  * @param {string} role 
  * @returns 
  */
-function signToken(id, role) {
+const signToken = (id, role) => {
  return jwt.sign({role: role}, SIGN_SECRET, 
   { subject: String(id),
     expiresIn: '1h',

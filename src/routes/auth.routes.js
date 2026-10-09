@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { query } = require('../db/pool');
-const { signToken, refreshToken, hash } = require('../utils/auth');
+const { signToken, refreshToken, hash } = require('../utils/jwr');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { transaction } = require('../utils/transaction');
 

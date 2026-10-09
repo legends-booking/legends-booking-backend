@@ -12,13 +12,11 @@ const appUserFilters ={
   "userRole": "role"
 }
 
-// All routes here require an authenticated admin
-//TODO: Uncomment this when we have a proper authentication system
-//router.use(requireAuth, requireRole('admin'));
+
 
 // ---------- List members ----------
 router.get(
-  '/',
+  '/', requireAuth, requireRole('admin'),
   asyncHandler(async (req, res) => {
     const conditions = [];
     const parms = [];
@@ -50,6 +48,7 @@ router.get(
 // ---------- Add a new member directly (front-desk sign-up on behalf of a customer) ----------
 router.post(
   '/', 
+  requireAuth, requireRole('admin'),
   validateUserSignup,
   asyncHandler(async (req, res) => {
     const { name, email, mobile , role,plan, startDate, endDate} = req.body;
