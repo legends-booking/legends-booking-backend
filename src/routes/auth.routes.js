@@ -102,16 +102,22 @@ router.post(
         refreshToken: refresh
       }
     };
-
+    res.cookie('refresh_token', refresh, {
+      httpOnly: true,
+      secure: false,          // may need false for plain http://localhost in dev
+      sameSite: 'lax',
+      path: '/auth',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
     res.status(200).json(result);
     
   }
 ));
 
 router.post('/refresh', asyncHandler(async (req, res) => {
-  const { refreshToken: payloadToken } = req.body;
-  if (!payloadToken ) {
-    return res.status(400).json({ error: 'token is required' });
+  const payloadToken = req.cookies.refresh_token;
+  if (!payloadToken) {
+    return res.status(401).json({ error: 'Not authenticated' });
   }
  
   const result =await transaction(async (db) => {
@@ -131,9 +137,14 @@ router.post('/refresh', asyncHandler(async (req, res) => {
         'SELECT role FROM app_user WHERE id = $1',
         [validTokenQuery.app_user]
       );
+      const { rows: [user] } = await db.query(
+        'SELECT id, name, email, mobile, role FROM app_user WHERE id = $1',
+        [validTokenQuery.app_user]
+      );
       return {
-        accessToken: signToken(validTokenQuery.app_user, role),
-        refreshToken: newRefreshToken  
+        accessToken: signToken(user.id, user.role),
+        refreshToken: newRefreshToken,
+        user,
       };
     }else{
       const {rows: [revokedToken]}=await db.query(
@@ -156,7 +167,14 @@ router.post('/refresh', asyncHandler(async (req, res) => {
   if(!result){
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
-  res.status(200).json(result);
+  res.cookie('refresh_token', result.refreshToken, {
+      httpOnly: true,
+      secure: false,          // may need false for plain http://localhost in dev
+      sameSite: 'lax',
+      path: '/auth',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+  res.status(200).json({ user: result.user, accessToken: result.accessToken });
 
 }));
 

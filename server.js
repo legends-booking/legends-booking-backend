@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const cookieParser = require('cookie-parser');
 const { query }= require('./src/db/pool')
 const { errorHandler } = require('./src/middleware/errorHandler');
 const authRoutes = require('./src/routes/auth.routes');
@@ -12,14 +13,33 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.set('trust proxy', 1); // behind Nginx on the OCI VM
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // allow non-browser clients (curl, Postman) which send no Origin
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      cb(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
+
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/auth', authRoutes);
 app.use('/members', membersRoutes);
 app.use('/membership-plans', membershipPlansRoutes);
+
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 app.use('/uploads', express.static(UPLOAD_DIR, {

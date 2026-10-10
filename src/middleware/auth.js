@@ -24,8 +24,10 @@ function requireAuth(req, res, next) {
  * Use after requireAuth. Restricts a route to one or more roles, e.g. requireRole('admin').
  */
 function requireRole(...allowedRoles) {
+  
   return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.userInfo.role)) {
+    console.log(req.userInfo);
+    if (!req.userInfo || !allowedRoles.includes(req.userInfo.role)) {
       return res.status(403).json({ error: 'Forbidden: insufficient permissions' });
     }
     next();

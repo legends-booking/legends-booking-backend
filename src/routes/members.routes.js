@@ -39,7 +39,7 @@ router.get(
     console.log(parms);
     console.log(conditions);
     const { rows } = await query(
-      `SELECT id, name, email, phone FROM app_user ${whereClause} ORDER BY created_at DESC`,parms
+      `SELECT id, name, email, mobile FROM app_user ${whereClause} ORDER BY created_at DESC`,parms
     );
     res.json(rows);
   })
@@ -51,6 +51,7 @@ router.post(
   requireAuth, requireRole('admin'),
   validateUserSignup,
   asyncHandler(async (req, res) => {
+    console.log(req);
     const { name, email, mobile , role,plan, startDate, endDate} = req.body;
     const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), SALT_ROUNDS);
     const inviteToken = crypto.randomBytes(32).toString('hex');
@@ -62,15 +63,18 @@ router.post(
          RETURNING id, name, email, mobile, created_at`,
         [name, email, mobile, role, passwordHash]
       );
-      const {rows:[credits]} = await clientConnection.query(
-        `SELECT class_credits FROM membership_plan WHERE id = $1`,
-        [plan]
-      );
-      const {rows:[app_user_membership]} = await clientConnection.query(
-        `INSERT INTO customer_membership (app_user, plan_id, start_date, 
-        end_date, credits_remaining) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [created.id, plan, startDate, endDate, credits.class_credits]
-      );
+      if (role == 'customer'){
+        const {rows:[credits]} = await clientConnection.query(
+          `SELECT class_credits FROM membership_plan WHERE id = $1`,
+          [parseInt(plan)]
+        );
+        const {rows:[app_user_membership]} = await clientConnection.query(
+          `INSERT INTO customer_membership (app_user, plan_id, start_date, 
+          end_date, credits_remaining) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+          [created.id, plan, startDate, endDate, credits.class_credits]
+        );
+      }
+      
 
       await clientConnection.query(
         `INSERT INTO auth_token (app_user, token_hash, purpose, expires_at)
