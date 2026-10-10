@@ -24,7 +24,7 @@ async function isValidEmail(email) {
 
 async function isValidPhone(phone) {
     
-    const {rows} = await query('SELECT * FROM app_user WHERE phone = $1', [phone]);
+    const {rows} = await query('SELECT * FROM app_user WHERE mobile = $1', [phone]);
     return rows.length === 0;
 }
 

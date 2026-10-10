@@ -1,4 +1,4 @@
-const { verifyToken } = require('../utils/jwt');
+const { verifyToken } = require('../utils/jwr');
 
 /**
  * Verifies the Bearer token and attaches { id, role } to req.user.
@@ -13,7 +13,7 @@ function requireAuth(req, res, next) {
 
   try {
     const payload = verifyToken(token);
-    req.user = payload; // { sub, role }
+    req.userInfo = {id: payload.sub, role: payload.role}; // { sub, role }
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
@@ -24,8 +24,10 @@ function requireAuth(req, res, next) {
  * Use after requireAuth. Restricts a route to one or more roles, e.g. requireRole('admin').
  */
 function requireRole(...allowedRoles) {
+  
   return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
+    console.log(req.userInfo);
+    if (!req.userInfo || !allowedRoles.includes(req.userInfo.role)) {
       return res.status(403).json({ error: 'Forbidden: insufficient permissions' });
     }
     next();
