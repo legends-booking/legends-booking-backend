@@ -8,6 +8,8 @@ const { transaction } = require('../utils/transaction');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
+const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+
 
 // // ---------- Customer signup ----------
 // router.post(
@@ -89,7 +91,6 @@ router.post(
     delete appUser.password_hash;
     const token = signToken(String(appUser.id), appUser.role); 
     const refresh = refreshToken();
-    console.log(`Refresh Token: ${refresh}`);
     await query(
         'INSERT INTO refresh_token '+
         '(app_user, refresh_token_hash,expires_at, family_id) VALUES ($1, $2, $3, $4)',
@@ -104,10 +105,10 @@ router.post(
     };
     res.cookie('refresh_token', refresh, {
       httpOnly: true,
-      secure: false,          // may need false for plain http://localhost in dev
+      secure: process.env.SSL === 'true',          
       sameSite: 'lax',
       path: '/auth',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: REFRESH_TOKEN_MAX_AGE,
     });
     res.status(200).json(result);
     
@@ -133,10 +134,6 @@ router.post('/refresh', asyncHandler(async (req, res) => {
         'INSERT INTO refresh_token (app_user, refresh_token_hash, expires_at, family_id) VALUES ($1, $2, $3, $4)',
         [validTokenQuery.app_user, hash(newRefreshToken), new Date(Date.now() + 30*24*60*60*1000), validTokenQuery.family_id]
       );
-      const {rows:[{role}]} = await db.query(
-        'SELECT role FROM app_user WHERE id = $1',
-        [validTokenQuery.app_user]
-      );
       const { rows: [user] } = await db.query(
         'SELECT id, name, email, mobile, role FROM app_user WHERE id = $1',
         [validTokenQuery.app_user]
@@ -153,6 +150,7 @@ router.post('/refresh', asyncHandler(async (req, res) => {
         [hash(payloadToken)]
       );
         if(revokedToken){
+          console.log("Usage of a revoked token. Revoking all tokens in the family");
           // ALREADY REVOKED TOKEN, REVOKE ALL TOKENS IN THE FAMILY
         await db.query(
         'UPDATE refresh_token SET revoked = true'+
@@ -169,10 +167,10 @@ router.post('/refresh', asyncHandler(async (req, res) => {
   }
   res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
-      secure: false,          // may need false for plain http://localhost in dev
+      secure: process.env.SSL === 'true',
       sameSite: 'lax',
       path: '/auth',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: REFRESH_TOKEN_MAX_AGE,
     });
   res.status(200).json({ user: result.user, accessToken: result.accessToken });
 

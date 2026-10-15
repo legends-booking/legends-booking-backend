@@ -23,11 +23,11 @@ app.set('trust proxy', 1); // behind Nginx on the OCI VM
 app.use(
   cors({
     origin: (origin, cb) => {
-      // allow non-browser clients (curl, Postman) which send no Origin
       if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
       cb(new Error('Not allowed by CORS'));
     },
     credentials: true,
+    maxAge: 600, // 10 minutes
   })
 );
 app.use(express.json());
