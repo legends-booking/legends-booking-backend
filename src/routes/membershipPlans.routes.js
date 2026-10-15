@@ -1,5 +1,6 @@
 const express = require('express');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const { query } = require('../db/pool');
 const multer = require('multer');
 const storage = require('../storage');
@@ -37,7 +38,7 @@ router.get('/', asyncHandler(async (req, res) => {
     }),
 );
 
-router.post('/', uploadImage, asyncHandler(async(req, res) =>{
+router.post('/', requireAuth, requireRole('admin'), uploadImage, asyncHandler(async(req, res) =>{
     const {name, description, price, credits} = req.body;
     const priceFloat = parseFloat(price);
     const creditsInt = parseInt(credits);
