@@ -87,13 +87,13 @@ CREATE TABLE IF NOT EXISTS class (
 
 CREATE TABLE IF NOT EXISTS enrollment (
     id                  BIGSERIAL PRIMARY KEY,
-    class            BIGINT NOT NULL REFERENCES class(id),
+    class               BIGINT NOT NULL REFERENCES class(id),
     app_user            BIGINT NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
-    status              TEXT NOT NULL DEFAULT 'enrolled' CHECK (status in ('enrolled', 'unenrolled', 'cancelled')),
+    status              TEXT NOT NULL DEFAULT 'enrolled' CHECK (status in ('enrolled', 'unenrolled', 'waitlisted','cancelled')),
     enrolled_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     unenrolled_at       TIMESTAMPTZ,
-    cancelled_by_admin  BOOLEAN NOT NULL DEFAULT FALSE,
-    -- a customer can re-enroll after cancelling, but only one ACTIVE enrollment per class
+    no_show            BOOLEAN NOT NULL DEFAULT FALSE,
+    -- a customer can re-enroll after unenrolling, but only one ACTIVE enrollment per class
     UNIQUE (class, app_user)
 );
 

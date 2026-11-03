@@ -43,6 +43,7 @@ const requireRole = (...allowedRoles) => {
  */
 const hash = (s) => {return crypto.createHash('sha256').update(s).digest('hex')};
 
+const generateRandomToken = () => {return crypto.randomBytes(32).toString('base64')}
 /**
  * 
  * @param {string} id 
@@ -70,4 +71,5 @@ const verifyToken = (token) =>  {
 
 const refreshToken =() =>{return crypto.randomBytes(32).toString('base64')}
 
-module.exports = { requireAuth, requireRole, signToken, verifyToken, refreshToken, hash };
+module.exports = { requireAuth, requireRole, signToken, 
+  verifyToken, refreshToken, hash, generateRandomToken };
