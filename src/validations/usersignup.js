@@ -17,15 +17,25 @@ function validateUserSignup(req, res, next) {
     next();
 }
 
+/**
+ * 
+ * @param {string} email 
+ * @returns 
+ */
 async function isValidEmail(email) {
     const {rows} = await query('SELECT * FROM app_user WHERE email = $1', [email]);
     return rows.length == 0;
 }
 
+/**
+ * 
+ * @param {string} phone 
+ * @returns 
+ */
 async function isValidPhone(phone) {
     
     const {rows} = await query('SELECT * FROM app_user WHERE mobile = $1', [phone]);
     return rows.length === 0;
 }
 
-module.exports = validateUserSignup;
+module.exports = {validateUserSignup};
