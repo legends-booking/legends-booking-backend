@@ -5,10 +5,11 @@ const { query } = require('../db/pool');
 const { signToken, refreshToken, hash } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { transaction } = require('../utils/transaction');
-
+const { sendInvitationEmail } = require('../password_reset/invitation_email');
 const router = express.Router();
 const SALT_ROUNDS = 12;
 const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+const COOL_DOWN_TIME = 60; // 60 seconds
 
 
 // // ---------- Customer signup ----------
@@ -174,6 +175,28 @@ router.post('/refresh', asyncHandler(async (req, res) => {
     });
   res.status(200).json({ user: result.user, accessToken: result.accessToken });
 
+}));
+
+router.post('/reset-password', asyncHandler(async(req, res) =>{
+  const {email} = req.body;
+  if(!email){
+    return res.status(400).json({ error: 'email is required' });
+  }
+  const {rows: [appUser]} = await query(
+    'SELECT id, name, email, mobile, role FROM app_user WHERE email = $1',
+    [email]
+  );
+  if (appUser){
+    const {rows: [recent]} = await query(
+      'SELECT 1 FROM auth_token WHERE app_user = $1 AND purpose = $2 AND created_at > now() - make_interval(secs => $3) LIMIT 1',
+      [appUser.id, 'password_reset', COOL_DOWN_TIME]
+    );
+    if (!recent){
+      await query('UPDATE auth_token SET used_at = now() WHERE app_user = $1 AND purpose = $2 AND used_at IS NULL', [appUser.id, 'password_reset']);
+      await sendInvitationEmail(appUser, 'password_reset');
+    }
+  }
+  res.sendStatus(204);
 }));
 
 module.exports = router;

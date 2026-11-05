@@ -1,5 +1,6 @@
 const { generateRandomToken, hash } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
+const {query} = require('../db/pool');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
@@ -25,16 +26,32 @@ function getTransport() {
   
 /**
  * 
- * @param {string} email 
+ * @param {import('../model/db').AppUser} appUser 
  * @param {string} purpose 
  */
-const sendInvitationEmail = async (email, purpose) => {
+const sendInvitationEmail = async (appUser, purpose) => {
     const token = generateRandomToken();
     const tokenHash = hash(token);
     const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);   // 2 days
-    const { subject, text, html, link } = constructEmail(token, purpose);
-    const info = await sendEmail(email, subject, text, html);
-    //persist token hash and expires at in the database
+    let stage = 1;
+    try{
+      await query(
+        `INSERT INTO auth_token (app_user, token_hash, purpose, expires_at)
+         VALUES ($1, $2, $3, $4)`,
+        [appUser.id, tokenHash, purpose, expiresAt]
+      );
+      stage = 2;
+      const { subject, text, html, link } = constructEmail(token, purpose);
+      await sendEmail(appUser.email, subject, text, html);
+    }catch(error){
+      console.error('Invite email failed' , {
+        userId: appUser.id,
+        purpose,
+        stage,
+        err: error
+      });
+    }
+    
 
 }
 

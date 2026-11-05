@@ -5,7 +5,9 @@ const { query } = require('../db/pool');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const {transaction} = require('../utils/transaction');
-const validateUserSignup = require('../validations/usersignup');
+const {validateUserSignup} = require('../validations/usersignup');
+const {sendInvitationEmail} = require('../password_reset/invitation_email');
+
 const router = express.Router();
 const SALT_ROUNDS = 12;
 const appUserFilters ={
@@ -35,9 +37,6 @@ router.get(
       whereClause += 'AND ';
       i++;
     }
-    console.log(whereClause);
-    console.log(parms);
-    console.log(conditions);
     const { rows } = await query(
       `SELECT id, name, email, mobile FROM app_user ${whereClause} ORDER BY created_at DESC`,parms
     );
@@ -51,11 +50,8 @@ router.post(
   requireAuth, requireRole('admin'),
   validateUserSignup,
   asyncHandler(async (req, res) => {
-    console.log(req);
     const { name, email, mobile , role,plan, startDate, endDate} = req.body;
     const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), SALT_ROUNDS);
-    const inviteToken = crypto.randomBytes(32).toString('hex');
-    const inviteTokenHash = crypto.createHash('sha256').update(inviteToken).digest('hex');
     const user_created = await transaction(async (clientConnection) => {
       const { rows: [created] } = await clientConnection.query(
         `INSERT INTO app_user (name, email, mobile, role, password_hash)
@@ -74,23 +70,16 @@ router.post(
           [created.id, plan, startDate, endDate, credits.class_credits]
         );
       }
-      
-
-      await clientConnection.query(
-        `INSERT INTO auth_token (app_user, token_hash, purpose, expires_at)
-         VALUES ($1, $2, 'invite', now() + INTERVAL '1 day')`,
-        [created.id, inviteTokenHash]
-      );
       return created;
     });
-    
+    sendInvitationEmail(user_created, 'invite');
     res.status(201).json({ "user":{
       "id": user_created.id,
       "name": user_created.name,
       "email": user_created.email,
       "mobile": user_created.mobile,
       "plan": plan
-    }, token: inviteToken });
+    }});
   })
 );
 
