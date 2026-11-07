@@ -6,6 +6,8 @@ const { signToken, refreshToken, hash } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { transaction } = require('../utils/transaction');
 const { sendInvitationEmail } = require('../password_reset/invitation_email');
+const { validateForPasswordReset } = require('../validations/resetpassword');
+
 const router = express.Router();
 const SALT_ROUNDS = 12;
 const REFRESH_TOKEN_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
@@ -86,7 +88,8 @@ router.post(
       'SELECT id, name, email, mobile, password_hash, role FROM app_user WHERE email = $1',
       [email]
     );
-    if (!appUser || !(await bcrypt.compare(password, appUser.password_hash))) {
+    const passwordHash = hash(password);
+    if (!appUser || (appUser.password_hash !== passwordHash)) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     delete appUser.password_hash;
@@ -177,7 +180,7 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
 }));
 
-router.post('/reset-password', asyncHandler(async(req, res) =>{
+router.post('/forgot-password', asyncHandler(async(req, res) =>{
   const {email} = req.body;
   if(!email){
     return res.status(400).json({ error: 'email is required' });
@@ -198,5 +201,34 @@ router.post('/reset-password', asyncHandler(async(req, res) =>{
   }
   res.sendStatus(204);
 }));
+
+
+router.post('/reset-password', asyncHandler(validateForPasswordReset), asyncHandler(async(req, res)=>{
+  const {token, password, purpose} = req.body;
+  const tokenHash = hash(token);
+  const passwordHash = hash(password);
+  
+  const claimed = await transaction (async (clientConnection)=>{
+    const {rows: [t]} = await clientConnection.query(
+      'UPDATE auth_token SET used_at = now() WHERE '+
+      'token_hash = $1 AND expires_at > now() AND purpose = $2 AND used_at IS NULL'+
+      ' RETURNING app_user',
+      [tokenHash, purpose]
+    )
+    if (!t) return false;
+    await clientConnection.query(
+      'UPDATE app_user SET password_hash = $1 WHERE id = $2', 
+      [passwordHash, t.app_user]);
+      //mark any previously issued tokens as used.
+      await clientConnection.query('UPDATE auth_token SET used_at = now() WHERE app_user = $1 AND used_at IS NULL', [t.app_user]);
+      if (purpose === 'password_reset'){
+        await clientConnection.query('UPDATE refresh_token SET revoked = true WHERE app_user = $1', [t.app_user]);
+      }
+      return true;
+  })
+  if (!claimed) return res.status(410).json({ error: 'Invalid or expired token' });
+  return res.status(200).json({ message: 'Password set successfully' });
+}));
+
 
 module.exports = router;

@@ -48,7 +48,7 @@ router.get(
 router.post(
   '/', 
   requireAuth, requireRole('admin'),
-  validateUserSignup,
+  asyncHandler(validateUserSignup),
   asyncHandler(async (req, res) => {
     const { name, email, mobile , role,plan, startDate, endDate} = req.body;
     const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), SALT_ROUNDS);
